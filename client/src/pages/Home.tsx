@@ -1,7 +1,9 @@
 /* Style reminder: Editorial Command Desk — Swiss editorial hierarchy, ivory canvas, navy ink, burnt-signal accent, RTL-first, asymmetric dashboard composition. */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { StatePanel, type ViewState } from "@/components/StatePanel";
+import { projectCatalog } from "@/lib/project-feed";
+import { useProjectFeed } from "@/hooks/useProjectFeed";
 import {
   ArrowUpLeft,
   BarChart3,
@@ -26,13 +28,6 @@ import {
   X,
 } from "lucide-react";
 
-const projects = [
-  { name: "Castel Pro", type: "Product UX", status: "قيد العرض", health: "مستقر", color: "orange", progress: 86, updated: "منذ ساعتين", repo: "castel-pro" },
-  { name: "Arabic Todo", type: "Frontend app", status: "مكتمل", health: "مستقر", color: "sage", progress: 100, updated: "أمس", repo: "arabic-todo" },
-  { name: "Carousel Factory", type: "Interactive editor", status: "قيد التحسين", health: "مراجعة", color: "blue", progress: 72, updated: "منذ 3 أيام", repo: "carousel-factory" },
-  { name: "CodeRise", type: "Studio landing", status: "مكتمل", health: "مستقر", color: "navy", progress: 100, updated: "الأسبوع الماضي", repo: "coderise-site" },
-];
-
 const activity = [
   ["تم تحديث README", "castel-pro", "قبل ساعتين", "orange"],
   ["اكتمل فحص الاستجابة", "arabic-todo", "أمس", "sage"],
@@ -40,12 +35,19 @@ const activity = [
 ];
 
 export default function Home() {
+  const { projects: feedProjects, status: feedStatus, retry } = useProjectFeed();
+  const projects = feedProjects.length ? feedProjects : projectCatalog;
   const [activeNav, setActiveNav] = useState("نظرة عامة");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("الكل");
-  const [selected, setSelected] = useState(projects[0]);
+  const [selected, setSelected] = useState(projectCatalog[0]);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [viewState, setViewState] = useState<ViewState>("ready");
+  const [viewState, setViewState] = useState<ViewState>("loading");
+
+  useEffect(() => {
+    if (feedStatus === "success") setViewState("ready");
+    if (feedStatus === "error") setViewState("error");
+  }, [feedStatus]);
 
   const filteredProjects = useMemo(() => projects.filter((project) => {
     const matchesQuery = `${project.name} ${project.type}`.toLowerCase().includes(query.toLowerCase());
@@ -82,7 +84,7 @@ export default function Home() {
 
           <section className="metric-grid" aria-label="ملخص الأداء"><Metric label="مشاريع منشورة" value="08" change="+٢ هذا الشهر" icon={FolderKanban} /><Metric label="نسبة اكتمال التوثيق" value="78%" change="+١٢٪" icon={BookOpen} /><Metric label="حالات وصول مراجعة" value="24" change="+٨ هذا الأسبوع" icon={Target} /><Metric label="معاينات حية" value="08" change="كلها تعمل" icon={ExternalLink} /></section>
 
-          <section className="work-grid"><div className="projects-panel panel"><div className="panel-heading"><div><p className="section-kicker">مساحة العمل <span className="count-pill">{filteredProjects.length}</span></p><h2>المشاريع النشطة</h2></div><button className="more-button" onClick={() => toast("تم فتح كل المشاريع")}>عرض الكل <ArrowUpLeft size={15} /></button></div><div className="toolbar"><div className="state-switcher" aria-label="تجربة حالات الواجهة"><span>حالات العرض</span>{([["ready", "جاهز"], ["loading", "تحميل"], ["error", "خطأ"], ["empty", "فارغ"]] as const).map(([value, label]) => <button key={value} className={viewState === value ? "selected" : ""} onClick={() => setViewState(value)}>{label}</button>)}</div><label className="search-field"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحثي عن مشروع..." aria-label="البحث في المشاريع" /></label><div className="filter-buttons"><Filter size={15} />{["الكل", "مكتمل", "قيد العرض"].map((item) => <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div></div>{viewState !== "ready" ? <StatePanel state={viewState} onRetry={() => setViewState("ready")} /> : <div className="project-list">{filteredProjects.length === 0 ? <StatePanel state="empty" onRetry={() => { setQuery(""); setFilter("الكل"); }} /> : filteredProjects.map((project, index) => <button className={`project-row ${selected.name === project.name ? "selected-row" : ""}`} key={project.name} onClick={() => setSelected(project)}><span className={`project-icon ${project.color}`}><Code2 size={18} /></span><span className="project-title"><strong><span className="project-index">0{index + 1}</span>{project.name}</strong><small>{project.type}</small></span><span className="project-status"><i className={project.health === "مستقر" ? "stable" : "review"} />{project.health}</span><span className="progress-cell"><span className="progress-track"><span style={{ width: `${project.progress}%` }} /></span><small>{project.progress}%</small></span><span className="project-updated">{project.updated}</span><MoreHorizontal size={17} /></button>)}</div>}</div>
+          <section className="work-grid"><div className="projects-panel panel"><div className="panel-heading"><div><p className="section-kicker">مساحة العمل <span className="count-pill">{filteredProjects.length}</span></p><h2>المشاريع النشطة</h2></div><button className="more-button" onClick={() => toast("تم فتح كل المشاريع")}>عرض الكل <ArrowUpLeft size={15} /></button></div><div className="toolbar"><div className="state-switcher" aria-label="تجربة حالات الواجهة"><span>حالات العرض</span>{([["ready", "جاهز"], ["loading", "تحميل"], ["error", "خطأ"], ["empty", "فارغ"]] as const).map(([value, label]) => <button key={value} className={viewState === value ? "selected" : ""} onClick={() => setViewState(value)}>{label}</button>)}</div><label className="search-field"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="ابحثي عن مشروع..." aria-label="البحث في المشاريع" /></label><div className="filter-buttons"><Filter size={15} />{["الكل", "مكتمل", "قيد العرض"].map((item) => <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>{item}</button>)}</div></div>{viewState !== "ready" ? <StatePanel state={viewState} onRetry={() => { setViewState("loading"); void retry(); }} /> : <div className="project-list">{filteredProjects.length === 0 ? <StatePanel state="empty" onRetry={() => { setQuery(""); setFilter("الكل"); }} /> : filteredProjects.map((project, index) => <button className={`project-row ${selected.name === project.name ? "selected-row" : ""}`} key={project.name} onClick={() => setSelected(project)}><span className={`project-icon ${project.color}`}><Code2 size={18} /></span><span className="project-title"><strong><span className="project-index">0{index + 1}</span>{project.name}</strong><small>{project.type}</small></span><span className="project-status"><i className={project.health === "مستقر" ? "stable" : "review"} />{project.health}</span><span className="progress-cell"><span className="progress-track"><span style={{ width: `${project.progress}%` }} /></span><small>{project.progress}%</small></span><span className="project-updated">{project.updated}</span><MoreHorizontal size={17} /></button>)}</div>}</div>
 
             <aside className="context-panel panel"><div className="context-top"><span className={`project-icon ${selected.color}`}><Code2 size={19} /></span><button className="more-button" aria-label="المزيد"><MoreHorizontal size={18} /></button></div><p className="section-kicker">المشروع المحدد</p><h2>{selected.name}</h2><p className="context-type">{selected.type} <span>•</span> {selected.repo}</p><div className="context-rule" /><div className="context-stat"><span>حالة المشروع</span><strong><i className="stable" /> {selected.health}</strong></div><div className="context-stat"><span>آخر تعديل</span><strong>{selected.updated}</strong></div><div className="context-stat"><span>اكتمال الدراسة</span><strong>{selected.progress}%</strong></div><div className="context-progress"><span style={{ width: `${selected.progress}%` }} /></div><button className="outline-button" onClick={() => toast(`فتح دراسة حالة ${selected.name}`)}>فتح دراسة الحالة <ArrowUpLeft size={16} /></button><button className="subtle-button" onClick={() => toast(`تم فتح ${selected.repo} على GitHub`)}><Code2 size={15} /> عرض المستودع</button></aside></section>
 
