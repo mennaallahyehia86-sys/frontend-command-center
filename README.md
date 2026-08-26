@@ -60,6 +60,10 @@ client/src/
 
 The interface uses an asymmetric command-desk composition rather than a generic centered dashboard. One contextual project panel acts as the dominant evidence module while smaller status modules support it. Burnt Signal is reserved for active states, primary actions, progress, and editorial annotations so it remains a recognizable product signal.
 
+## Quality & Testing
+
+The project includes unit tests for core logic using Vitest. Run them with `pnpm test`.
+
 ## Roadmap
 
 The next valuable additions are Vitest coverage for filtering and selection behavior, a typed data layer for projects, and a real case-study route for each featured repository.
