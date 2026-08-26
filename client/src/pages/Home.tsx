@@ -1,6 +1,7 @@
 /* Style reminder: Editorial Command Desk — Swiss editorial hierarchy, ivory canvas, navy ink, burnt-signal accent, RTL-first, asymmetric dashboard composition. */
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { filterProjectList } from "@/lib/project-utils";
 import {
   ArrowUpLeft,
   BarChart3,
@@ -45,11 +46,7 @@ export default function Home() {
   const [selected, setSelected] = useState(projects[0]);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const filteredProjects = useMemo(() => projects.filter((project) => {
-    const matchesQuery = `${project.name} ${project.type}`.toLowerCase().includes(query.toLowerCase());
-    const matchesFilter = filter === "الكل" || project.status === filter;
-    return matchesQuery && matchesFilter;
-  }), [query, filter]);
+  const filteredProjects = useMemo(() => filterProjectList(projects, query, filter as "الكل" | "مكتمل" | "قيد العرض"), [query, filter]);
 
   const navItems = [
     ["نظرة عامة", LayoutDashboard], ["المشاريع", FolderKanban], ["دراسات الحالة", BookOpen], ["المقاييس", BarChart3], ["الإعدادات", Settings2],
